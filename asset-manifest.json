@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/stress_prediction/static/css/main.fdc85307.css",
+    "main.js": "/stress_prediction/static/js/main.d6ce603a.js",
+    "static/js/453.825386d9.chunk.js": "/stress_prediction/static/js/453.825386d9.chunk.js",
+    "index.html": "/stress_prediction/index.html",
+    "main.fdc85307.css.map": "/stress_prediction/static/css/main.fdc85307.css.map",
+    "main.d6ce603a.js.map": "/stress_prediction/static/js/main.d6ce603a.js.map",
+    "453.825386d9.chunk.js.map": "/stress_prediction/static/js/453.825386d9.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.fdc85307.css",
+    "static/js/main.d6ce603a.js"
+  ]
+}
