@@ -138,30 +138,36 @@ def ensure_db_ready() -> None:
         return
     try:
         Base.metadata.create_all(bind=engine)
+
+        # Lightweight schema patching for existing databases created before auth fields were added.
+        inspector = inspect(engine)
+        with engine.begin() as conn:
+            user_columns = {column["name"] for column in inspector.get_columns("users")}
+            prediction_columns = {
+                column["name"] for column in inspector.get_columns("stress_predictions")
+            }
+
+            if "password_hash" not in user_columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL"))
+                conn.execute(text("UPDATE users SET password_hash = '' WHERE password_hash IS NULL"))
+                if engine.dialect.name == "mysql":
+                    conn.execute(text("ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NOT NULL"))
+                else:
+                    conn.execute(text("ALTER TABLE users ALTER COLUMN password_hash SET NOT NULL"))
+
+            if "working_hours" not in prediction_columns:
+                conn.execute(text("ALTER TABLE stress_predictions ADD COLUMN working_hours FLOAT NULL"))
+
         DB_READY = True
         DB_INIT_ERROR = None
+    except HTTPException:
+        raise
     except Exception as exc:
         DB_INIT_ERROR = str(exc)
-        raise
-
-    # Lightweight schema patching for existing databases created before auth fields were added.
-    inspector = inspect(engine)
-    with engine.begin() as conn:
-        user_columns = {column["name"] for column in inspector.get_columns("users")}
-        prediction_columns = {
-            column["name"] for column in inspector.get_columns("stress_predictions")
-        }
-
-        if "password_hash" not in user_columns:
-            conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL"))
-            conn.execute(text("UPDATE users SET password_hash = '' WHERE password_hash IS NULL"))
-            if engine.dialect.name == "mysql":
-                conn.execute(text("ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NOT NULL"))
-            else:
-                conn.execute(text("ALTER TABLE users ALTER COLUMN password_hash SET NOT NULL"))
-
-        if "working_hours" not in prediction_columns:
-            conn.execute(text("ALTER TABLE stress_predictions ADD COLUMN working_hours FLOAT NULL"))
+        raise HTTPException(
+            status_code=503,
+            detail="Service temporarily unavailable. Please try again later.",
+        )
 
 
 def hash_password(password: str) -> str:

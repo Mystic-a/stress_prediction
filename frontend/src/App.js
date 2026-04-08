@@ -22,7 +22,7 @@ function App() {
     process.env.REACT_APP_API_BASE
     || (isDevelopment
       ? 'http://127.0.0.1:8010'
-      : 'https://stress-prediction-gvlf.onrender.com')
+      : 'https://jiovio-backend.onrender.com')
   ).replace(/\/$/, '');
 
   const apiFetch = useCallback(async (path, options = {}, retries = 1) => {
