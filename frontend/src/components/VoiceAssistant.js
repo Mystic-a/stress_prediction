@@ -180,6 +180,10 @@ function VoiceAssistant({ predictions, onCommand }) {
       };
 
       setRecognition(recognitionInstance);
+
+      return () => {
+        recognitionInstance.abort();
+      };
     }
   }, [processCommand]);
 

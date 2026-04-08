@@ -118,6 +118,9 @@ class StressPrediction(Base):
     user = relationship("User", back_populates="predictions")
 
 
+_MAX_USER_AGENT_LENGTH = 1000
+
+
 class LoginEvent(Base):
     __tablename__ = "login_events"
     __table_args__ = (
@@ -128,7 +131,7 @@ class LoginEvent(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     event_type = Column(String(20), nullable=False, default="login")
     ip_address = Column(String(64), nullable=True)
-    user_agent = Column(String(500), nullable=True)
+    user_agent = Column(String(_MAX_USER_AGENT_LENGTH), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 
@@ -138,7 +141,6 @@ def ensure_db_ready() -> None:
         return
     try:
         Base.metadata.create_all(bind=engine)
-        DB_READY = True
         DB_INIT_ERROR = None
     except Exception as exc:
         DB_INIT_ERROR = str(exc)
@@ -162,6 +164,8 @@ def ensure_db_ready() -> None:
 
         if "working_hours" not in prediction_columns:
             conn.execute(text("ALTER TABLE stress_predictions ADD COLUMN working_hours FLOAT NULL"))
+
+    DB_READY = True
 
 
 def hash_password(password: str) -> str:
@@ -611,9 +615,9 @@ def register_user(payload: RegisterUserRequest) -> dict:
                 "created_at": user.created_at,
             },
         }
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Username or email already exists")
+        raise HTTPException(status_code=409, detail="Username or email already exists") from exc
     finally:
         db.close()
 
@@ -631,14 +635,17 @@ def login_user(payload: LoginUserRequest, request: Request) -> dict:
         if not user or not verify_password(payload.password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid username or password")
 
-        login_event = LoginEvent(
-            user_id=user.id,
-            event_type="login",
-            ip_address=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent"),
-        )
-        db.add(login_event)
-        db.commit()
+        try:
+            login_event = LoginEvent(
+                user_id=user.id,
+                event_type="login",
+                ip_address=request.client.host if request.client else None,
+                user_agent=(request.headers.get("user-agent") or "")[:_MAX_USER_AGENT_LENGTH],
+            )
+            db.add(login_event)
+            db.commit()
+        except Exception:
+            db.rollback()
 
         return {
             "message": "Login successful",
@@ -756,10 +763,9 @@ def categorize_stress_level(score: float) -> dict:
     """Categorize stress score (19-100) into Low, Medium, or High."""
     if score < 46:
         return {"level": "Low", "category": "low"}
-    elif score < 73:
+    if score < 73:
         return {"level": "Medium", "category": "medium"}
-    else:
-        return {"level": "High", "category": "high"}
+    return {"level": "High", "category": "high"}
 
 
 @app.post("/predict")

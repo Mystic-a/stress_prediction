@@ -30,7 +30,7 @@ function LoginRegister({ onAuth }) {
     // Validation
     const newErrors = {};
     if (!username.trim()) newErrors.username = 'Username is required';
-    if (username.length < 3) newErrors.username = 'Username must be at least 3 characters';
+    else if (username.length < 3) newErrors.username = 'Username must be at least 3 characters';
     
     if (!isLogin) {
       if (!email.trim()) newErrors.email = 'Email is required';
