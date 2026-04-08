@@ -5,6 +5,7 @@ from datetime import datetime
 import hashlib
 import hmac
 import secrets
+from urllib.parse import urlsplit, urlunsplit
 
 import joblib
 import pandas as pd
@@ -178,6 +179,18 @@ def verify_password(password: str, password_hash: str) -> bool:
         return hmac.compare_digest(calc_digest, stored_digest)
     except Exception:
         return False
+
+
+def redact_database_url(url: str) -> str:
+    """Hide credentials in connection URLs while keeping host/database visible."""
+    try:
+        parsed = urlsplit(url)
+        if not parsed.netloc or "@" not in parsed.netloc:
+            return url
+        host_part = parsed.netloc.split("@", 1)[1]
+        return urlunsplit((parsed.scheme, f"***:***@{host_part}", parsed.path, parsed.query, parsed.fragment))
+    except Exception:
+        return "***"
 
 
 INDEX_HTML = """
@@ -546,7 +559,7 @@ def health() -> dict:
     return {
         "status": "ok",
         "database_connected": db_ok,
-        "database_url": DATABASE_URL,
+        "database_url": redact_database_url(DATABASE_URL),
         "database_error": db_error,
     }
 
