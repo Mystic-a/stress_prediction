@@ -7,6 +7,8 @@ import History from './components/History';
 import Insights from './components/Insights';
 import VoiceAssistant from './components/VoiceAssistant';
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function App() {
   const [user, setUser] = useState(null);
   const [predictions, setPredictions] = useState([]);
@@ -23,6 +25,26 @@ function App() {
       : 'https://stress-prediction-gvlf.onrender.com')
   ).replace(/\/$/, '');
 
+  const apiFetch = useCallback(async (path, options = {}, retries = 1) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+    try {
+      const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        signal: controller.signal,
+      });
+      return response;
+    } catch (error) {
+      if (retries > 0) {
+        await sleep(2000);
+        return apiFetch(path, options, retries - 1);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }, [API_BASE]);
+
   // Load user and predictions from localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -32,7 +54,7 @@ function App() {
   }, []);
 
   const loadUserHistory = useCallback(async (userId) => {
-    const response = await fetch(`${API_BASE}/users/${userId}/history`);
+    const response = await apiFetch(`/users/${userId}/history`, {}, 1);
     if (!response.ok) {
       throw new Error('Unable to load history from SQL database');
     }
@@ -49,7 +71,7 @@ function App() {
     if (mapped.length > 0) {
       setLastPrediction(mapped[0]);
     }
-  }, [API_BASE]);
+  }, [apiFetch]);
 
   // When user logs in, load their history from backend
   useEffect(() => {
@@ -71,11 +93,11 @@ function App() {
       ? { username, password }
       : { username, email, password, full_name: fullName || null };
 
-    const response = await fetch(`${API_BASE}/users/${endpoint}`, {
+    const response = await apiFetch(`/users/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    });
+    }, 1);
 
     if (!response.ok) {
       const err = await response.json();
@@ -108,7 +130,7 @@ function App() {
   const handlePredict = async (formData) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/predict`, {
+      const response = await apiFetch('/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -124,7 +146,7 @@ function App() {
           spo2_avg_pct: formData.spo2_avg_pct,
           mood: formData.mood,
         }),
-      });
+      }, 1);
 
       if (!response.ok) throw new Error('Prediction failed');
 

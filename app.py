@@ -36,10 +36,15 @@ _raw_origins = os.getenv(
     "https://Mystic-a.github.io/stress_prediction,https://mystic-a.github.io/stress_prediction",
 )
 _allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+_allow_origin_regex = os.getenv(
+    "ALLOWED_ORIGIN_REGEX",
+    r"^https://([a-zA-Z0-9-]+\.)*github\.io$|^https://([a-zA-Z0-9-]+\.)*onrender\.com$",
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
+    allow_origin_regex=_allow_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
