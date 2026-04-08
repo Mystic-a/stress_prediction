@@ -654,7 +654,7 @@ def login_user(payload: LoginUserRequest, request: Request) -> dict:
         db.close()
 
 
-@app.get("/users/{user_id}/login-history")
+@app.get("/users/{user_id:int}/login-history")
 def get_user_login_history(user_id: int) -> dict:
     ensure_db_ready()
     db = SessionLocal()
@@ -688,7 +688,7 @@ def get_user_login_history(user_id: int) -> dict:
         db.close()
 
 
-@app.get("/users/{user_id}")
+@app.get("/users/{user_id:int}")
 def get_user(user_id: int) -> dict:
     ensure_db_ready()
     db = SessionLocal()
@@ -707,7 +707,7 @@ def get_user(user_id: int) -> dict:
         db.close()
 
 
-@app.get("/users/{user_id}/history")
+@app.get("/users/{user_id:int}/history")
 def get_user_history(user_id: int) -> dict:
     ensure_db_ready()
     db = SessionLocal()
