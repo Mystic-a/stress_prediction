@@ -4,7 +4,7 @@ A full-stack stress prediction system built with:
 - FastAPI backend for auth, predictions, and history APIs
 - Scikit-learn regression model exported as a Joblib artifact
 - React frontend for login, input capture, prediction results, insights, and history
-- MySQL storage for users, login events, and prediction history
+- PostgreSQL/MySQL storage for users, login events, and prediction history
 
 ## 1. Setup Instructions
 
@@ -13,7 +13,7 @@ A full-stack stress prediction system built with:
 Install the following on Windows:
 - Python 3.10+
 - Node.js 18+ and npm
-- MySQL 8+
+- A SQL database, such as PostgreSQL on Render
 
 ### 1.2 Clone and open project
 
@@ -41,7 +41,7 @@ npm install
 
 ### 1.5 Database setup
 
-Create a MySQL database and user:
+Create a PostgreSQL database and user on your cloud provider:
 
 ```sql
 CREATE DATABASE stress_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -53,7 +53,7 @@ FLUSH PRIVILEGES;
 Set the backend connection string in PowerShell before running the API:
 
 ```powershell
-$env:DATABASE_URL="mysql+pymysql://stress_user:StressApp123@127.0.0.1:3306/stress_app?charset=utf8mb4"
+$env:DATABASE_URL="postgresql+psycopg2://postgres:password@localhost:5432/stress_app"
 ```
 
 ### 1.6 Run the app
@@ -72,7 +72,7 @@ Terminal 1 (backend):
 ```powershell
 cd D:\jiovio
 .\.venv\Scripts\Activate.ps1
-$env:DATABASE_URL="mysql+pymysql://stress_user:StressApp123@127.0.0.1:3306/stress_app?charset=utf8mb4"
+$env:DATABASE_URL="postgresql+psycopg2://postgres:password@localhost:5432/stress_app"
 python -m uvicorn app:app --host 127.0.0.1 --port 8010
 ```
 

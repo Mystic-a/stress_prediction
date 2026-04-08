@@ -12,7 +12,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, text, Index
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, text, Index, inspect
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
@@ -45,16 +45,19 @@ app.add_middleware(
 )
 
 # SQL database configuration. Set DATABASE_URL in environment.
-# Example (MySQL): mysql+pymysql://root:password@localhost:3306/stress_app?charset=utf8mb4
+# Example (PostgreSQL): postgresql+psycopg2://postgres:password@localhost:5432/stress_app
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "mysql+pymysql://root:password@localhost:3306/stress_app?charset=utf8mb4",
+    "postgresql+psycopg2://postgres:password@localhost:5432/stress_app",
 )
 
-# Some managed providers return mysql://... URLs. SQLAlchemy expects
-# mysql+pymysql://... for the PyMySQL driver.
+# Normalize common provider URLs so SQLAlchemy uses an explicit driver.
 if DATABASE_URL.startswith("mysql://"):
     DATABASE_URL = DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -136,30 +139,23 @@ def ensure_db_ready() -> None:
         raise
 
     # Lightweight schema patching for existing databases created before auth fields were added.
-    with engine.connect() as conn:
-        has_password_hash = conn.execute(
-            text("SHOW COLUMNS FROM users LIKE 'password_hash'")
-        ).fetchone()
-        if not has_password_hash:
-            conn.execute(
-                text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL")
-            )
-            conn.execute(
-                text("UPDATE users SET password_hash = '' WHERE password_hash IS NULL")
-            )
-            conn.execute(
-                text("ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NOT NULL")
-            )
-            conn.commit()
+    inspector = inspect(engine)
+    with engine.begin() as conn:
+        user_columns = {column["name"] for column in inspector.get_columns("users")}
+        prediction_columns = {
+            column["name"] for column in inspector.get_columns("stress_predictions")
+        }
 
-        has_working_hours = conn.execute(
-            text("SHOW COLUMNS FROM stress_predictions LIKE 'working_hours'")
-        ).fetchone()
-        if not has_working_hours:
-            conn.execute(
-                text("ALTER TABLE stress_predictions ADD COLUMN working_hours FLOAT NULL")
-            )
-            conn.commit()
+        if "password_hash" not in user_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL"))
+            conn.execute(text("UPDATE users SET password_hash = '' WHERE password_hash IS NULL"))
+            if engine.dialect.name == "mysql":
+                conn.execute(text("ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NOT NULL"))
+            else:
+                conn.execute(text("ALTER TABLE users ALTER COLUMN password_hash SET NOT NULL"))
+
+        if "working_hours" not in prediction_columns:
+            conn.execute(text("ALTER TABLE stress_predictions ADD COLUMN working_hours FLOAT NULL"))
 
 
 def hash_password(password: str) -> str:

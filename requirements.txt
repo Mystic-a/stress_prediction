@@ -6,4 +6,5 @@ joblib
 pydantic
 sqlalchemy
 pymysql
+psycopg2-binary
 cryptography
