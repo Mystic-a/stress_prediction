@@ -25,10 +25,20 @@ MODEL_FILE_CANDIDATES = [
 
 app = FastAPI(title="Wearables Stress Prediction API", version="1.0.0")
 
-# Enable CORS for React frontend
+# Enable CORS for React frontend.
+# Set ALLOWED_ORIGINS (comma-separated) to override the defaults.
+# Defaults include local dev origins and GitHub Pages origins for Mystic-a.
+_raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://127.0.0.1:3000,http://localhost:3000,"
+    "https://Mystic-a.github.io,https://mystic-a.github.io,"
+    "https://Mystic-a.github.io/stress_prediction,https://mystic-a.github.io/stress_prediction",
+)
+_allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
