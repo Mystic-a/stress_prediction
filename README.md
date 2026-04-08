@@ -345,7 +345,7 @@ jiovio/
 
 ### Frontend cannot call backend
 - Confirm backend is running on `127.0.0.1:8010`
-- Frontend currently uses a fixed API base URL in `frontend/src/App.js`
+- Frontend reads the API base URL from `REACT_APP_API_BASE` (falls back to `http://127.0.0.1:8010` for local dev)
 
 ### Model errors
 - Ensure `new_model.joblib` exists in project root
@@ -397,14 +397,46 @@ After backend deployment:
 - Swagger docs: `https://<your-backend-domain>/docs`
 - Health check: `https://<your-backend-domain>/health`
 
-### 8.4 Optional frontend deployment (recommended)
+### 8.4 Deploy frontend to GitHub Pages (recommended)
 
-Deploy `frontend` on Vercel or Netlify.
+The React frontend can be deployed to GitHub Pages as a static site.
 
-Before deploy, set frontend environment variable:
-- `REACT_APP_API_BASE=https://<your-backend-domain>`
+#### Required environment variables
 
-Then build/deploy normally from `frontend`.
+| Variable | Where | Description |
+|---|---|---|
+| `REACT_APP_API_BASE` | Build-time env var (or GitHub Actions repo variable) | Public HTTPS URL of the deployed FastAPI backend. Example: `https://your-backend.onrender.com` |
+| `DATABASE_URL` | Backend server env var | MySQL connection string for the FastAPI backend |
+| `ALLOWED_ORIGINS` | Backend server env var (optional) | Comma-separated CORS origins. Defaults already include `https://Mystic-a.github.io` and `https://Mystic-a.github.io/stress_prediction` |
+
+#### Manual deploy (one-time or local)
+
+```bash
+cd frontend
+npm install
+REACT_APP_API_BASE="https://your-backend.onrender.com" npm run deploy
+```
+
+On Windows PowerShell:
+
+```powershell
+cd frontend
+npm install
+$env:REACT_APP_API_BASE="https://your-backend.onrender.com"
+npm run deploy
+```
+
+This builds the app and pushes the `build/` folder to the `gh-pages` branch.  
+In GitHub repo settings, set **Pages → Source = `gh-pages` branch**.
+
+#### Automatic deploy via GitHub Actions
+
+The workflow `.github/workflows/deploy-frontend.yml` automatically builds and deploys the frontend to GitHub Pages on every push to `main` that touches `frontend/`.
+
+1. In your GitHub repo, go to **Settings → Secrets and variables → Actions → Variables**.
+2. Create a repository variable named `REACT_APP_API_BASE` with the value of your deployed backend URL.
+3. In **Settings → Pages**, set source to the `gh-pages` branch (the workflow handles this automatically after first deploy).
+4. Push to `main` – the workflow runs and your site is live at `https://Mystic-a.github.io/stress_prediction`.
 
 ### 8.5 Submission checklist (what to provide)
 
