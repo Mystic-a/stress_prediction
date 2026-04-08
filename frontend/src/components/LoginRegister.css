@@ -48,6 +48,17 @@
   font-size: 14px;
 }
 
+.server-status-hint {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  color: #795548;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .close-error {
   background: none;
   border: none;

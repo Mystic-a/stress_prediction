@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './LoginRegister.css';
 
-function LoginRegister({ onAuth }) {
+function LoginRegister({ onAuth, serverReady }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,7 +58,12 @@ function LoginRegister({ onAuth }) {
         isLogin,
       });
     } catch (authError) {
-      setError(authError.message || 'Authentication failed. Please try again.');
+      const isNetworkErr = authError instanceof TypeError || authError.name === 'AbortError';
+      setError(
+        isNetworkErr
+          ? 'Cannot reach the server. It may be starting up — please wait a moment and try again.'
+          : authError.message || 'Authentication failed. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -69,6 +74,12 @@ function LoginRegister({ onAuth }) {
       <div className="auth-card">
         <h1>Stress Predictor</h1>
         <p className="auth-subtitle">Track your daily health and predict stress levels</p>
+
+        {!serverReady && (
+          <div className="server-status-hint">
+            ⏳ Connecting to server… This may take up to 60 seconds if the server is starting up.
+          </div>
+        )}
 
         {error && (
           <div className="error-banner">

@@ -9,12 +9,18 @@ import VoiceAssistant from './components/VoiceAssistant';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Detect network-level fetch failures (server unreachable, CORS preflight failed, etc.)
+function isNetworkError(err) {
+  return err instanceof TypeError || err.name === 'AbortError';
+}
+
 function App() {
   const [user, setUser] = useState(null);
   const [predictions, setPredictions] = useState([]);
   const [lastPrediction, setLastPrediction] = useState(null);
   const [currentTab, setCurrentTab] = useState('predict');
   const [loading, setLoading] = useState(false);
+  const [serverReady, setServerReady] = useState(false);
   const isDevelopment = process.env.NODE_ENV === 'development';
   const userId = user?.id;
 
@@ -25,7 +31,7 @@ function App() {
       : 'https://stress-prediction-gvlf.onrender.com')
   ).replace(/\/$/, '');
 
-  const apiFetch = useCallback(async (path, options = {}, retries = 1) => {
+  const apiFetch = useCallback(async (path, options = {}, retries = 3) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
     try {
@@ -36,13 +42,33 @@ function App() {
       return response;
     } catch (error) {
       if (retries > 0) {
-        await sleep(2000);
+        // Progressive backoff: 5s, 10s, 20s to give Render time to wake up
+        const delays = [20000, 10000, 5000];
+        const delay = delays[retries - 1] ?? 5000;
+        await sleep(delay);
         return apiFetch(path, options, retries - 1);
       }
       throw error;
     } finally {
       clearTimeout(timeout);
     }
+  }, [API_BASE]);
+
+  // Ping the backend on app load to wake up the Render.com free-tier service
+  // before the user tries to log in.
+  useEffect(() => {
+    let cancelled = false;
+    const warmUp = async () => {
+      try {
+        await fetch(`${API_BASE}/health`);
+        if (!cancelled) setServerReady(true);
+      } catch (_) {
+        // Ignore warm-up failures silently; the login flow will retry as needed.
+        if (!cancelled) setServerReady(false);
+      }
+    };
+    warmUp();
+    return () => { cancelled = true; };
   }, [API_BASE]);
 
   // Load user and predictions from localStorage
@@ -54,7 +80,7 @@ function App() {
   }, []);
 
   const loadUserHistory = useCallback(async (userId) => {
-    const response = await apiFetch(`/users/${userId}/history`, {}, 1);
+    const response = await apiFetch(`/users/${userId}/history`);
     if (!response.ok) {
       throw new Error('Unable to load history from SQL database');
     }
@@ -97,7 +123,7 @@ function App() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    }, 1);
+    });
 
     if (!response.ok) {
       const err = await response.json();
@@ -107,6 +133,7 @@ function App() {
     const data = await response.json();
     setUser(data.user);
     localStorage.setItem('user', JSON.stringify(data.user));
+    setServerReady(true);
     
     // Load user history, but don't prevent login if it fails
     try {
@@ -146,7 +173,7 @@ function App() {
           spo2_avg_pct: formData.spo2_avg_pct,
           mood: formData.mood,
         }),
-      }, 1);
+      });
 
       if (!response.ok) throw new Error('Prediction failed');
 
@@ -167,14 +194,17 @@ function App() {
       }
       setCurrentTab('results');
     } catch (error) {
-      alert('Error making prediction: ' + error.message);
+      const msg = isNetworkError(error)
+        ? 'Cannot reach the server. It may be starting up — please wait a moment and try again.'
+        : 'Error making prediction: ' + error.message;
+      alert(msg);
     } finally {
       setLoading(false);
     }
   };
 
   if (!user) {
-    return <LoginRegister onAuth={handleAuth} />;
+    return <LoginRegister onAuth={handleAuth} serverReady={serverReady} />;
   }
 
   return (
