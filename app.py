@@ -51,6 +51,11 @@ DATABASE_URL = os.getenv(
     "mysql+pymysql://root:password@localhost:3306/stress_app?charset=utf8mb4",
 )
 
+# Some managed providers return mysql://... URLs. SQLAlchemy expects
+# mysql+pymysql://... for the PyMySQL driver.
+if DATABASE_URL.startswith("mysql://"):
+    DATABASE_URL = DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
+
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

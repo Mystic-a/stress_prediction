@@ -464,3 +464,30 @@ The workflow `.github/workflows/deploy-frontend.yml` automatically builds and de
 ```
 
 - Frontend deployment link (optional): `https://<your-frontend-domain>`
+
+### 8.6 Cloud-only launch plan (no local runtime)
+
+You can keep everything live in cloud services and not run the app locally.
+
+1. GitHub repo (already done):
+  - `https://github.com/Mystic-a/stress_prediction`
+2. Create managed MySQL (Railway, Aiven, PlanetScale, or similar).
+3. In Render:
+  - New Blueprint -> select this GitHub repo
+  - Confirm service from `render.yaml`
+  - Add env var `DATABASE_URL` from your managed MySQL
+  - Deploy and copy backend URL
+4. In Vercel/Netlify (optional but recommended):
+  - Import `frontend` from same GitHub repo
+  - Add env var `REACT_APP_API_BASE=https://<render-backend-url>`
+  - Deploy and copy frontend URL
+5. Create demo user using deployed backend:
+  - `POST https://<render-backend-url>/users/register`
+  - Save username/password for evaluator
+
+Final deliverables to share:
+- Backend link
+- API docs link (`/docs`)
+- Test credentials
+- Sample predict payload
+- Frontend link (optional)
