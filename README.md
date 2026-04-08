@@ -58,14 +58,7 @@ $env:DATABASE_URL="postgresql+psycopg2://postgres:password@localhost:5432/stress
 
 ### 1.6 Run the app
 
-Option A: one command launcher
-
-```powershell
-cd D:\jiovio
-.\run_app.ps1
-```
-
-Option B: run services separately (recommended for debugging)
+Run services separately (recommended):
 
 Terminal 1 (backend):
 
@@ -291,11 +284,6 @@ FastAPI Backend (port 8010)
   - Password hashing/verification using PBKDF2-HMAC-SHA256
   - Model loading and prediction logic
 
-- `run_app.ps1`
-  - Checks backend health
-  - Starts backend if not running
-  - Starts frontend if not running
-
 - `train_and_export_model.py`
   - End-to-end preprocessing + training + artifact export
 
@@ -317,7 +305,6 @@ FastAPI Backend (port 8010)
 jiovio/
   app.py
   train_and_export_model.py
-  run_app.ps1
   requirements.txt
   new_model.joblib
   wearables_health_6mo_daily.csv
