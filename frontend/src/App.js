@@ -13,10 +13,11 @@ function App() {
   const [lastPrediction, setLastPrediction] = useState(null);
   const [currentTab, setCurrentTab] = useState('predict');
   const [loading, setLoading] = useState(false);
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   const API_BASE = (
     process.env.REACT_APP_API_BASE
-    || (process.env.NODE_ENV === 'development'
+    || (isDevelopment
       ? 'http://127.0.0.1:8010'
       : 'https://stress-prediction-gvlf.onrender.com')
   ).replace(/\/$/, '');
