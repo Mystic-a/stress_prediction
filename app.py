@@ -584,48 +584,6 @@ def model_info() -> dict:
     }
 
 
-@app.get("/debug/schema")
-def debug_schema(token: str) -> dict:
-    if token != "schema123":
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    inspector = inspect(engine)
-    tables = []
-    for table_name in inspector.get_table_names(schema="public"):
-        tables.append(
-            {
-                "table_name": table_name,
-                "columns": [
-                    {
-                        "name": column["name"],
-                        "type": str(column["type"]),
-                        "nullable": column["nullable"],
-                        "default": str(column["default"]),
-                    }
-                    for column in inspector.get_columns(table_name, schema="public")
-                ],
-                "foreign_keys": [
-                    {
-                        "constrained_columns": fk.get("constrained_columns"),
-                        "referred_table": fk.get("referred_table"),
-                        "referred_columns": fk.get("referred_columns"),
-                    }
-                    for fk in inspector.get_foreign_keys(table_name, schema="public")
-                ],
-                "indexes": [
-                    {
-                        "name": idx.get("name"),
-                        "column_names": idx.get("column_names"),
-                        "unique": idx.get("unique"),
-                    }
-                    for idx in inspector.get_indexes(table_name, schema="public")
-                ],
-            }
-        )
-
-    return {"database": DATABASE_URL, "tables": tables}
-
-
 @app.post("/users/register")
 def register_user(payload: RegisterUserRequest) -> dict:
     ensure_db_ready()
