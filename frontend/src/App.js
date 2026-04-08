@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import LoginRegister from './components/LoginRegister';
 import PredictionForm from './components/PredictionForm';
@@ -14,6 +14,7 @@ function App() {
   const [currentTab, setCurrentTab] = useState('predict');
   const [loading, setLoading] = useState(false);
   const isDevelopment = process.env.NODE_ENV === 'development';
+  const userId = user?.id;
 
   const API_BASE = (
     process.env.REACT_APP_API_BASE
@@ -30,21 +31,7 @@ function App() {
     if (savedPredictions) setPredictions(JSON.parse(savedPredictions));
   }, []);
 
-  // When user logs in, load their history from backend
-  useEffect(() => {
-    if (user && user.id) {
-      loadUserHistory(user.id).catch((err) => {
-        console.error('Failed to load history on login:', err);
-      });
-    }
-  }, [user?.id]);
-
-  // Save predictions to localStorage whenever they change.
-  useEffect(() => {
-    localStorage.setItem('predictions', JSON.stringify(predictions));
-  }, [predictions]);
-
-  const loadUserHistory = async (userId) => {
+  const loadUserHistory = useCallback(async (userId) => {
     const response = await fetch(`${API_BASE}/users/${userId}/history`);
     if (!response.ok) {
       throw new Error('Unable to load history from SQL database');
@@ -62,7 +49,21 @@ function App() {
     if (mapped.length > 0) {
       setLastPrediction(mapped[0]);
     }
-  };
+  }, [API_BASE]);
+
+  // When user logs in, load their history from backend
+  useEffect(() => {
+    if (userId) {
+      loadUserHistory(userId).catch((err) => {
+        console.error('Failed to load history on login:', err);
+      });
+    }
+  }, [userId, loadUserHistory]);
+
+  // Save predictions to localStorage whenever they change.
+  useEffect(() => {
+    localStorage.setItem('predictions', JSON.stringify(predictions));
+  }, [predictions]);
 
   const handleAuth = async ({ username, email, password, fullName, isLogin }) => {
     const endpoint = isLogin ? 'login' : 'register';
