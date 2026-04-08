@@ -1,29 +1,32 @@
-# Stress Predictor (Wearables Health)
+﻿# Stress Predictor (Wearables Health)
 
-A full-stack stress prediction system built with:
-- FastAPI backend for auth, predictions, and history APIs
-- Scikit-learn regression model exported as a Joblib artifact
-- React frontend for login, input capture, prediction results, insights, and history
-- PostgreSQL/MySQL storage for users, login events, and prediction history
+Stress Predictor is a full-stack application that predicts daily stress level from wearable/lifestyle inputs.
+
+- Frontend: React (user auth, input form, results, history, insights)
+- Backend: FastAPI (prediction + auth + history APIs)
+- ML: scikit-learn Linear Regression model serialized with Joblib
+- Database: PostgreSQL (Render) or MySQL (compatible fallback)
+
+---
 
 ## 1. Setup Instructions
 
 ### 1.1 Prerequisites
 
-Install the following on Windows:
 - Python 3.10+
 - Node.js 18+ and npm
-- A SQL database, such as PostgreSQL on Render
+- PostgreSQL database (Render recommended)
+- Git
 
-### 1.2 Clone and open project
+### 1.2 Clone Repository
 
 ```powershell
 cd D:\
-git clone <your-repo-url> jiovio
+git clone https://github.com/Mystic-a/stress_prediction.git jiovio
 cd D:\jiovio
 ```
 
-### 1.3 Python backend setup
+### 1.3 Backend Setup
 
 ```powershell
 cd D:\jiovio
@@ -32,131 +35,129 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 1.4 Frontend setup
+Set database URL:
+
+```powershell
+$env:DATABASE_URL="postgresql://<user>:<password>@<host>:5432/<db>?sslmode=require"
+```
+
+Notes:
+- Backend auto-normalizes `postgres://` and `postgresql://` URLs.
+- For Render backend + Render Postgres, use Internal Database URL.
+
+Start backend:
+
+```powershell
+python -m uvicorn app:app --host 127.0.0.1 --port 8010
+```
+
+### 1.4 Frontend Setup
 
 ```powershell
 cd D:\jiovio\frontend
 npm install
 ```
 
-### 1.5 Database setup
-
-Create a PostgreSQL database and user on your cloud provider:
-
-```sql
-CREATE DATABASE stress_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'stress_user'@'localhost' IDENTIFIED BY 'StressApp123';
-GRANT ALL PRIVILEGES ON stress_app.* TO 'stress_user'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-Set the backend connection string in PowerShell before running the API:
+Set API base (recommended):
 
 ```powershell
-$env:DATABASE_URL="postgresql+psycopg2://postgres:password@localhost:5432/stress_app"
+$env:REACT_APP_API_BASE="https://stress-prediction-gvlf.onrender.com"
 ```
 
-### 1.6 Run the app
-
-Run services separately (recommended):
-
-Terminal 1 (backend):
+Start frontend:
 
 ```powershell
-cd D:\jiovio
-.\.venv\Scripts\Activate.ps1
-$env:DATABASE_URL="postgresql+psycopg2://postgres:password@localhost:5432/stress_app"
-python -m uvicorn app:app --host 127.0.0.1 --port 8010
-```
-
-Terminal 2 (frontend):
-
-```powershell
-cd D:\jiovio\frontend
 npm start
 ```
 
-### 1.7 Access points
+If port 3000 is busy, run on 3001:
 
-- Frontend UI: http://127.0.0.1:3000
-- Backend API: http://127.0.0.1:8010
-- OpenAPI docs: http://127.0.0.1:8010/docs
-- Health check: http://127.0.0.1:8010/health
+```powershell
+$env:PORT="3001"
+npm start
+```
+
+### 1.5 Access URLs
+
+- Backend health: https://stress-prediction-gvlf.onrender.com/health
+- Backend docs: https://stress-prediction-gvlf.onrender.com/docs
+- Local frontend (example): http://127.0.0.1:3001
 
 ---
 
 ## 2. API Details
 
-Base URL: `http://127.0.0.1:8010`
+Base URL (production): https://stress-prediction-gvlf.onrender.com
 
-### 2.1 Health and model info
+### 2.1 Health and Model
 
-#### `GET /health`
-Returns API/database status.
+#### GET /health
+Returns backend and DB status.
 
-Response fields:
-- `status`
-- `database_connected`
-- `database_url`
-- `database_error`
+Example response:
 
-#### `GET /model-info`
-Returns loaded model artifact metadata.
+```json
+{
+  "status": "ok",
+  "database_connected": true,
+  "database_url": "postgresql+psycopg2://***:***@host/db",
+  "database_error": null
+}
+```
 
-Response fields:
-- `model_file`
-- `feature_names`
-- `allowed_mood_values`
+#### GET /model-info
+Returns active model artifact details.
+
+- model_file
+- feature_names
+- allowed_mood_values
 
 ### 2.2 Authentication
 
-#### `POST /users/register`
-Register a new user.
+#### POST /users/register
+Registers new user.
 
-Request body:
-
-```json
-{
-  "username": "alice",
-  "email": "alice@example.com",
-  "password": "StrongPass123",
-  "full_name": "Alice Doe"
-}
-```
-
-Validation notes:
-- Password must be at least 8 characters
-- Username and email must be unique
-
-#### `POST /users/login`
-Login with username/password and log login event.
-
-Request body:
+Request:
 
 ```json
 {
-  "username": "alice",
-  "password": "StrongPass123"
+  "username": "demo_user",
+  "email": "demo@example.com",
+  "password": "DemoPass123!",
+  "full_name": "Demo User"
 }
 ```
 
-### 2.3 User resources
+Validation:
+- password minimum 8 chars
+- username and email unique
 
-#### `GET /users/{user_id}`
-Return profile details for a user.
+#### POST /users/login
+Logs in existing user.
 
-#### `GET /users/{user_id}/login-history`
-Return login events for a user.
+Request:
 
-#### `GET /users/{user_id}/history`
-Return saved prediction history for a user.
+```json
+{
+  "username": "demo_user",
+  "password": "DemoPass123!"
+}
+```
+
+### 2.3 User Endpoints
+
+- GET /users/{user_id:int}
+- GET /users/{user_id:int}/history
+- GET /users/{user_id:int}/login-history
+
+Note: routes use integer path converter to avoid collision with `/users/register`.
 
 ### 2.4 Prediction
 
-#### `POST /predict`
-Generate stress score prediction from daily metrics.
+#### POST /predict
+Returns stress score + category.
 
-Request body:
+Request:
 
 ```json
 {
@@ -174,15 +175,7 @@ Request body:
 }
 ```
 
-Required fields:
-- `caffeine_mg`
-- `alcohol_units`
-- `screen_time_min`
-- `sleep_duration_hours`
-- `calories_kcal`
-- `mood` (`very_bad | bad | neutral | good | very_good`)
-
-Response body:
+Response:
 
 ```json
 {
@@ -191,6 +184,7 @@ Response body:
   "category": "medium",
   "saved_record_id": 42,
   "input_used": {
+    "user_id": 1,
     "caffeine_mg": 120,
     "alcohol_units": 0,
     "screen_time_min": 180,
@@ -200,13 +194,12 @@ Response body:
     "workout_minutes": 30,
     "working_hours": 8,
     "spo2_avg_pct": 97,
-    "mood": "good",
-    "user_id": 1
+    "mood": "good"
   }
 }
 ```
 
-Stress level thresholds used by backend:
+Stress thresholds:
 - Low: score < 46
 - Medium: 46 <= score < 73
 - High: score >= 73
@@ -215,39 +208,43 @@ Stress level thresholds used by backend:
 
 ## 3. ML Model Explanation
 
-### 3.1 Training pipeline
+### 3.1 Training Pipeline
 
-Implemented in `train_and_export_model.py`:
-- Loads dataset: `wearables_health_6mo_daily.csv`
-- Drops non-target/unused columns
-- Encodes mood using ordinal map:
-  - `very_bad=1`, `bad=2`, `neutral=3`, `good=4`, `very_good=5`
-- Fills missing values for:
-  - `sleep_duration_hours` (mean)
-  - `calories_kcal` (mean)
-- Splits data using `train_test_split(test_size=0.2, random_state=42)`
-- Trains `LinearRegression`
-- Saves artifact to `new_model.joblib`
+Implemented in [train_and_export_model.py](train_and_export_model.py).
 
-### 3.2 Artifact structure
+Pipeline summary:
+- Load dataset: [wearables_health_6mo_daily.csv](wearables_health_6mo_daily.csv)
+- Drop non-required columns
+- Encode mood:
+  - very_bad=1
+  - bad=2
+  - neutral=3
+  - good=4
+  - very_good=5
+- Fill missing values (`sleep_duration_hours`, `calories_kcal`) using mean
+- Split data (`train_test_split`, random_state=42)
+- Train LinearRegression
+- Save artifact to [new_model.joblib](new_model.joblib)
 
-Saved Joblib artifact is a dictionary with:
-- `model`: trained scikit-learn model
-- `feature_names`: strict feature order used for inference
-- `mood_map`: categorical mood to numeric mapping
+### 3.2 Model Artifact Contents
 
-### 3.3 Inference behavior
+The artifact is a dict containing:
+- model
+- feature_names
+- mood_map
 
-In `POST /predict`:
-- Backend loads artifact dynamically
-- Converts `mood` to numeric using `mood_map`
-- Reorders request payload to exactly match `feature_names`
-- Fills missing optional model features with `0.0`
-- Predicts numeric stress score
-- Maps score to category (`low|medium|high`) and label (`Low|Medium|High`)
-- If `user_id` is present and valid, prediction is stored in MySQL
+### 3.3 Inference Behavior
 
-### 3.4 Retraining the model
+Implemented in [app.py](app.py):
+- Load artifact
+- Map mood text to numeric using artifact mood_map
+- Align input to strict feature_names order
+- Fill missing optional features with 0.0
+- Predict stress score
+- Classify to Low/Medium/High
+- Persist to DB if `user_id` is provided
+
+### 3.4 Retraining
 
 ```powershell
 cd D:\jiovio
@@ -255,226 +252,94 @@ cd D:\jiovio
 python train_and_export_model.py
 ```
 
-This regenerates `new_model.joblib` used by the API.
-
 ---
 
 ## 4. System Architecture
 
-### 4.1 High-level view
+### 4.1 High-Level Architecture
 
 ```text
-React Frontend (port 3000)
-  |
-  | HTTP/JSON
-  v
-FastAPI Backend (port 8010)
-  |\
-  | \-- Loads model artifact (new_model.joblib)
-  |
-  \---- MySQL (users, login_events, stress_predictions)
+React Frontend
+   |
+   | HTTPS JSON requests
+   v
+FastAPI Backend (Render)
+   |  \
+   |   \-- ML artifact: new_model.joblib
+   |
+   +------ PostgreSQL (Render)
 ```
 
-### 4.2 Backend components
+### 4.2 Backend Components
 
-- `app.py`
-  - FastAPI app and route handlers
-  - SQLAlchemy models (`User`, `StressPrediction`, `LoginEvent`)
-  - Database initialization and lightweight schema patching
-  - Password hashing/verification using PBKDF2-HMAC-SHA256
-  - Model loading and prediction logic
+- [app.py](app.py)
+  - FastAPI routes
+  - SQLAlchemy models
+  - DB init + schema patching
+  - auth password hashing/verification
+  - prediction logic
 
-- `train_and_export_model.py`
-  - End-to-end preprocessing + training + artifact export
+- [train_and_export_model.py](train_and_export_model.py)
+  - data preprocessing
+  - model training
+  - artifact export
 
-### 4.3 Data flow
+- [render.yaml](render.yaml)
+  - Render web service blueprint
 
-1. User registers/logs in from React UI.
-2. Frontend calls backend auth endpoints.
-3. User submits health metrics.
-4. Backend transforms payload and runs model inference.
-5. Backend returns score + category.
-6. If logged in, prediction record is persisted.
-7. Frontend loads historical records for trends/insights.
+### 4.3 Frontend Components
 
----
+- [frontend/src/App.js](frontend/src/App.js)
+  - auth flow
+  - prediction requests
+  - history loading
+  - tab navigation
 
-## 5. Project Structure
+- [frontend/src/components](frontend/src/components)
+  - LoginRegister
+  - PredictionForm
+  - ResultsDisplay
+  - History
+  - Insights
+  - VoiceAssistant
 
-```text
-jiovio/
-  app.py
-  train_and_export_model.py
-  requirements.txt
-  new_model.joblib
-  wearables_health_6mo_daily.csv
-  frontend/
-    package.json
-    src/
-      App.js
-      components/
-        LoginRegister.js
-        PredictionForm.js
-        ResultsDisplay.js
-        History.js
-        Insights.js
-        VoiceAssistant.js
-```
+### 4.4 Data Flow
+
+1. User registers/logs in from React.
+2. Frontend calls FastAPI auth endpoints.
+3. User submits wearable metrics.
+4. Backend preprocesses request and runs model inference.
+5. Backend returns score/category.
+6. Backend stores prediction and login events in DB.
+7. Frontend reads user history and insights.
 
 ---
 
-## 6. Troubleshooting
+## 5. Deployment Notes
 
-### Backend not starting
-- Verify MySQL service is running
-- Verify `DATABASE_URL` credentials and database name
-- Confirm Python venv is active and requirements installed
+### Backend (Render)
 
-### Frontend cannot call backend
-- Confirm backend is running on `127.0.0.1:8010`
-- Frontend reads the API base URL from `REACT_APP_API_BASE` (falls back to `http://127.0.0.1:8010` for local dev)
-
-### Model errors
-- Ensure `new_model.joblib` exists in project root
-- Regenerate using `python train_and_export_model.py`
-
----
-
-## 7. Tech Stack
-
-- Backend: FastAPI, SQLAlchemy, Pydantic, Uvicorn
-- ML: pandas, scikit-learn, joblib
-- Database: MySQL (via PyMySQL)
-- Frontend: React (Create React App)
-
----
-
-## 8. Public Deployment (GitHub + Render)
-
-GitHub stores your source code. To expose APIs publicly, deploy the backend from GitHub to a hosting platform (Render recommended for this project).
-
-### 8.1 Push project to GitHub
-
-```powershell
-cd D:\jiovio
-git init
-git add .
-git commit -m "Initial upload"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo>.git
-git push -u origin main
-```
-
-### 8.2 Deploy backend on Render
-
-1. Create a Render account and connect GitHub.
-2. Use Blueprint deploy with `render.yaml` in this repo, or create a Web Service manually.
-3. Set environment variable `DATABASE_URL` to your hosted MySQL connection string.
-4. Deploy.
-
-Render runtime settings used by this repo:
 - Build command: `pip install -r requirements.txt`
 - Start command: `uvicorn app:app --host 0.0.0.0 --port $PORT`
-- Health endpoint: `/health`
+- Required env var: `DATABASE_URL`
+- Optional env var: `ALLOWED_ORIGINS`
 
-### 8.3 API docs (public)
+### Frontend (GitHub Pages)
 
-After backend deployment:
-- API base: `https://<your-backend-domain>`
-- Swagger docs: `https://<your-backend-domain>/docs`
-- Health check: `https://<your-backend-domain>/health`
+- Workflow file: [.github/workflows/deploy-frontend.yml](.github/workflows/deploy-frontend.yml)
+- Required build var: `REACT_APP_API_BASE`
 
-### 8.4 Deploy frontend to GitHub Pages (recommended)
+---
 
-The React frontend can be deployed to GitHub Pages as a static site.
+## 6. Tech Stack
 
-#### Required environment variables
-
-| Variable | Where | Description |
-|---|---|---|
-| `REACT_APP_API_BASE` | Build-time env var (or GitHub Actions repo variable) | Public HTTPS URL of the deployed FastAPI backend. Example: `https://your-backend.onrender.com` |
-| `DATABASE_URL` | Backend server env var | MySQL connection string for the FastAPI backend |
-| `ALLOWED_ORIGINS` | Backend server env var (optional) | Comma-separated CORS origins. Defaults already include `https://Mystic-a.github.io` and `https://Mystic-a.github.io/stress_prediction` |
-
-#### Manual deploy (one-time or local)
-
-```bash
-cd frontend
-npm install
-REACT_APP_API_BASE="https://your-backend.onrender.com" npm run deploy
-```
-
-On Windows PowerShell:
-
-```powershell
-cd frontend
-npm install
-$env:REACT_APP_API_BASE="https://your-backend.onrender.com"
-npm run deploy
-```
-
-This builds the app and pushes the `build/` folder to the `gh-pages` branch.  
-In GitHub repo settings, set **Pages → Source = `gh-pages` branch**.
-
-#### Automatic deploy via GitHub Actions
-
-The workflow `.github/workflows/deploy-frontend.yml` automatically builds and deploys the frontend to GitHub Pages on every push to `main` that touches `frontend/`.
-
-1. In your GitHub repo, go to **Settings → Secrets and variables → Actions → Variables**.
-2. Create a repository variable named `REACT_APP_API_BASE` with the value of your deployed backend URL.
-3. In **Settings → Pages**, set source to the `gh-pages` branch (the workflow handles this automatically after first deploy).
-4. Push to `main` – the workflow runs and your site is live at `https://Mystic-a.github.io/stress_prediction`.
-
-### 8.5 Submission checklist (what to provide)
-
-- Backend deployment link: `https://<your-backend-domain>`
-- API documentation: `https://<your-backend-domain>/docs`
-- Test credentials:
-  - Username: `demo_user`
-  - Password: `DemoPass123!`
-- Sample payload for `/predict`:
-
-```json
-{
-  "user_id": 1,
-  "caffeine_mg": 120,
-  "alcohol_units": 0,
-  "screen_time_min": 180,
-  "sleep_duration_hours": 7.2,
-  "calories_kcal": 2100,
-  "resting_hr_bpm": 60,
-  "workout_minutes": 30,
-  "working_hours": 8,
-  "spo2_avg_pct": 97,
-  "mood": "good"
-}
-```
-
-- Frontend deployment link (optional): `https://<your-frontend-domain>`
-
-### 8.6 Cloud-only launch plan (no local runtime)
-
-You can keep everything live in cloud services and not run the app locally.
-
-1. GitHub repo (already done):
-  - `https://github.com/Mystic-a/stress_prediction`
-2. Create managed MySQL (Railway, Aiven, PlanetScale, or similar).
-3. In Render:
-  - New Blueprint -> select this GitHub repo
-  - Confirm service from `render.yaml`
-  - Add env var `DATABASE_URL` from your managed MySQL
-  - Deploy and copy backend URL
-4. In Vercel/Netlify (optional but recommended):
-  - Import `frontend` from same GitHub repo
-  - Add env var `REACT_APP_API_BASE=https://<render-backend-url>`
-  - Deploy and copy frontend URL
-5. Create demo user using deployed backend:
-  - `POST https://<render-backend-url>/users/register`
-  - Save username/password for evaluator
-
-Final deliverables to share:
-- Backend link
-- API docs link (`/docs`)
-- Test credentials
-- Sample predict payload
-- Frontend link (optional)
+- FastAPI
+- SQLAlchemy
+- Pydantic
+- Uvicorn
+- pandas
+- scikit-learn
+- joblib
+- React (CRA)
+- GitHub Actions
+- Render (Web Service + PostgreSQL)
