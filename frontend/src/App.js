@@ -14,11 +14,10 @@ function App() {
   const [currentTab, setCurrentTab] = useState('predict');
   const [loading, setLoading] = useState(false);
 
-  const API_BASE = process.env.REACT_APP_API_BASE || (
-    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://127.0.0.1:8010'
-      : 'https://stress-prediction-gvlf.onrender.com'
-  );
+  const API_BASE = (
+    process.env.REACT_APP_API_BASE
+    || (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8010' : '')
+  ).replace(/\/$/, '');
 
   // Load user and predictions from localStorage
   useEffect(() => {
