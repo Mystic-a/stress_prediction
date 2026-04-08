@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+
+# Frontend
+frontend/node_modules/
+frontend/build/
+
+# OS
+.DS_Store
+Thumbs.db
