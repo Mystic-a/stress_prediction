@@ -1,11 +1,11 @@
-﻿# Stress Predictor (Wearables Health)
+﻿# Stress Predictor web application
 
 Stress Predictor is a full-stack application that predicts daily stress level from wearable/lifestyle inputs.
 
 - Frontend: React (user auth, input form, results, history, insights)
 - Backend: FastAPI (prediction + auth + history APIs)
 - ML: scikit-learn Linear Regression model serialized with Joblib
-- Database: PostgreSQL (Render) or MySQL (compatible fallback)
+- Database: PostgreSQL (Render) or MySQL (compatible fallback that runs locally)
 
 ---
 
@@ -215,7 +215,7 @@ Implemented in [train_and_export_model.py](train_and_export_model.py).
 Pipeline summary:
 - Load dataset: [wearables_health_6mo_daily.csv](wearables_health_6mo_daily.csv)
 - Drop non-required columns
-- Encode mood:
+- Encode mood(Handling categorical variables)
   - very_bad=1
   - bad=2
   - neutral=3
@@ -223,7 +223,8 @@ Pipeline summary:
   - very_good=5
 - Fill missing values (`sleep_duration_hours`, `calories_kcal`) using mean
 - Split data (`train_test_split`, random_state=42)
-- Train LinearRegression
+- Train Ridge regression, R2: 0.913089080354624, Lasso R2: 0.91236203553056, Decision Tree R2: 0.8132246721260655,Random Forest R2: 0.9066875890293923, Gradient Boosting R2: 0.9117335867200287, SVR(Support Vector Regression) R2: 0.24542546116576225, Linear Regression R2: 0.9130890859408106. Linear regression has the best R2 value and we use to for the ML model
+   
 - Save artifact to [new_model.joblib](new_model.joblib)
 
 ### 3.2 Model Artifact Contents
@@ -258,17 +259,63 @@ python train_and_export_model.py
 
 ### 4.1 High-Level Architecture
 
-```text
-React Frontend
-   |
-   | HTTPS JSON requests
-   v
-FastAPI Backend (Render)
-   |  \
-   |   \-- ML artifact: new_model.joblib
-   |
-   +------ PostgreSQL (Render)
-```
+                    +--------------------------------------+
+                    |            End User Browser          |
+                    |  (GitHub Pages or local React app)  |
+                    +-------------------+------------------+
+                                        |
+                                        | HTTPS (JSON)
+                                        v
++-----------------------------------------------------------------------+
+|                         React Frontend (SPA)                          |
+|  - Auth UI (register/login)                                           |
+|  - Prediction form + validation                                       |
+|  - Results/History/Insights views                                     |
+|  - Voice assistant UI component                                       |
+|  - API client layer (fetch to FastAPI endpoints)                      |
++-------------------------------+---------------------------------------+
+                                |
+                                | REACT_APP_API_BASE
+                                v
++-----------------------------------------------------------------------+
+|                      FastAPI Backend (Render)                         |
+|                                                                       |
+|  API Layer                                                            |
+|  - /health                                                            |
+|  - /model-info                                                        |
+|  - /users/register                                                    |
+|  - /users/login                                                       |
+|  - /users/{user_id:int}                                               |
+|  - /users/{user_id:int}/history                                       |
+|  - /users/{user_id:int}/login-history                                 |
+|  - /predict                                                           |
+|                                                                       |
+|  Service/Domain Layer                                                 |
+|  - Input validation (Pydantic)                                        |
+|  - Mood encoding and feature alignment                                |
+|  - Stress categorization (Low/Medium/High)                            |
+|  - Password hashing + verification                                    |
+|                                                                       |
+|  Data Access Layer (SQLAlchemy ORM)                                   |
+|  - User, StressPrediction, LoginEvent models                          |
+|  - Session lifecycle + transactions                                   |
+|                                                                       |
+|  ML Inference Layer                                                   |
+|  - Load joblib artifact                                                |
+|  - Extract model + feature_names + mood_map                           |
+|  - Predict stress score                                                |
++-------------------------------+---------------------------------------+
+                                |
+                                | SQL over TLS
+                                v
++-----------------------------------------------------------------------+
+|                  PostgreSQL Database (Render)                         |
+|  Tables:                                                              |
+|  - users                                                              |
+|  - stress_predictions                                                 |
+|  - login_events                                                       |
+|            |
++-----------------------------------------------------------------------+
 
 ### 4.2 Backend Components
 
@@ -314,8 +361,36 @@ FastAPI Backend (Render)
 7. Frontend reads user history and insights.
 
 ---
+### 5. Data Visualizations
+These are the visualizations shown in the Insights tab:
 
-## 5. Deployment Notes
+#### KPI Summary Cards
+#### Current Stress Score
+#### Historical Average Score
+#### Improvement Percentage vs historical baseline
+#### Stress Trend Line Chart
+Line chart of recent stress scores in time order
+Shows whether stress is trending upward, downward, or stable
+#### Stress Score Histogram
+Frequency distribution of historical stress scores
+Helps identify the most common stress-score ranges
+#### Scatter Plot: Screen Time vs Stress Score( feature with high correlation)
+X-axis: screen time (minutes)
+Y-axis: stress score
+Points are color-coded by category (low, medium, high)
+Current prediction point is highlighted separately
+#### Historical Category Distribution Bars
+Bar-style distribution for Low, Medium, and High category counts
+Shows how stress levels are distributed across history
+#### Baseline Comparison Panel
+Current vs historical deltas for:
+Stress score
+Caffeine intake
+Sleep duration
+Screen time
+
+
+## 6. Deployment Notes
 
 ### Backend (Render)
 
@@ -331,7 +406,7 @@ FastAPI Backend (Render)
 
 ---
 
-## 6. Tech Stack
+## 7. Tech Stack
 
 - FastAPI
 - SQLAlchemy
