@@ -1,6 +1,6 @@
 
 ﻿ 
-# Stress Predictor web 
+# Stress Predictor web application
 Stress Predictor is a full-stack application that predicts daily stress level from wearable/lifestyle inputs.
 
 - Frontend: React (user auth, input form, results, history, insights)
@@ -10,7 +10,7 @@ Stress Predictor is a full-stack application that predicts daily stress level fr
   
 
 ---
-[View Live Site](https://mystic-a.github.io/stress_prediction/)
+[Click here to view Live Site ](https://mystic-a.github.io/stress_prediction/)
 
 
 ## 1. Setup Instructions
