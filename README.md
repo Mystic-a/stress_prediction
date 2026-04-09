@@ -1,14 +1,17 @@
 
-﻿# Stress Predictor web application
-
+﻿ 
+# Stress Predictor web 
 Stress Predictor is a full-stack application that predicts daily stress level from wearable/lifestyle inputs.
 
 - Frontend: React (user auth, input form, results, history, insights)
 - Backend: FastAPI (prediction + auth + history APIs)
 - ML: scikit-learn Linear Regression model serialized with Joblib
 - Database: PostgreSQL (Render) or MySQL (compatible fallback that runs locally)
+  
 
 ---
+[View Live Site](https://mystic-a.github.io/stress_prediction/)
+
 
 ## 1. Setup Instructions
 
