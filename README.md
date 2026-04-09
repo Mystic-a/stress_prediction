@@ -1,9 +1,6 @@
-<<<<<<< HEAD
+
 ﻿# Stress Predictor web application
 
-=======
-﻿# Stress Predictor (Wearables Health)
->>>>>>> 8409f70 (Update README high-level architecture diagram)
 Stress Predictor is a full-stack application that predicts daily stress level from wearable/lifestyle inputs.
 
 - Frontend: React (user auth, input form, results, history, insights)
@@ -422,17 +419,5 @@ Screen time
 - React (CRA)
 - GitHub Actions
 - Render (Web Service + PostgreSQL)
-rcel/Netlify (optional but recommended):
-  - Import `frontend` from same GitHub repo
-  - Add env var `REACT_APP_API_BASE=https://<render-backend-url>`
-  - Deploy and copy frontend URL
-5. Create demo user using deployed backend:
-  - `POST https://<render-backend-url>/users/register`
-  - Save username/password for evaluator
 
-Final deliverables to share:
-- Backend link
-- API docs link (`/docs`)
-- Test credentials
-- Sample predict payload
-- Frontend link (optional)
+
