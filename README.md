@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 ﻿# Stress Predictor web application
 
+=======
+﻿# Stress Predictor (Wearables Health)
+>>>>>>> 8409f70 (Update README high-level architecture diagram)
 Stress Predictor is a full-stack application that predicts daily stress level from wearable/lifestyle inputs.
 
 - Frontend: React (user auth, input form, results, history, insights)
@@ -258,64 +262,64 @@ python train_and_export_model.py
 ## 4. System Architecture
 
 ### 4.1 High-Level Architecture
-+----------------------------------------------------------------------------------+
-|                                  End User Browser                                |
-|                        (GitHub Pages or local React app)                         |
-+---------------------------------------------+------------------------------------+
-                                              |
-                                              | HTTPS (JSON)
-                                              v
-+----------------------------------------------------------------------------------+
-|                              React Frontend (SPA)                                |
-| - Auth UI (register/login)                                                       |
-| - Prediction form + validation                                                   |
-| - Results / History / Insights views                                             |
-| - Voice assistant UI component                                                   |
-| - API client layer (fetch to FastAPI endpoints)                                  |
-+---------------------------------------------+------------------------------------+
-                                              |
-                                              | REACT_APP_API_BASE
-                                              v
-+----------------------------------------------------------------------------------+
-|                            FastAPI Backend (Render)                              |
-|                                                                                  |
-| API Layer                                                                        |
-| - /health                                                                        |
-| - /model-info                                                                    |
-| - /users/register                                                                |
-| - /users/login                                                                   |
-| - /users/{user_id:int}                                                           |
-| - /users/{user_id:int}/history                                                   |
-| - /users/{user_id:int}/login-history                                             |
-| - /predict                                                                       |
-|                                                                                  |
-| Service / Domain Layer                                                           |
-| - Input validation (Pydantic)                                                    |
-| - Mood encoding and feature alignment                                            |
-| - Stress categorization (Low / Medium / High)                                    |
-| - Password hashing + verification                                                |
-|                                                                                  |
-| Data Access Layer (SQLAlchemy ORM)                                               |
-| - User, StressPrediction, LoginEvent models                                      |
-| - Session lifecycle + transactions                                               |
-|                                                                                  |
-| ML Inference Layer                                                               |
-| - Load joblib artifact                                                           |
-| - Extract model + feature_names + mood_map                                       |
-| - Predict stress score                                                           |
-+---------------------------------------------+------------------------------------+
-                                              |
-                                              | SQL over TLS
-                                              v
-+----------------------------------------------------------------------------------+
-|                           PostgreSQL Database (Render)                           |
-| Tables:                                                                          |
-| - users                                                                          |
-| - stress_predictions                                                             |
-| - login_events                                                                   |
-+----------------------------------------------------------------------------------+
-
-                
+```text
+        +--------------------------------------+
+        |            End User Browser          |
+        |  (GitHub Pages or local React app)  |
+        +-------------------+------------------+
+          |
+          | HTTPS (JSON)
+          v
++-----------------------------------------------------------------------+
+|                         React Frontend (SPA)                          |
+|  - Auth UI (register/login)                                           |
+|  - Prediction form + validation                                       |
+|  - Results/History/Insights views                                     |
+|  - Voice assistant UI component                                       |
+|  - API client layer (fetch to FastAPI endpoints)                      |
++-------------------------------+---------------------------------------+
+        |
+        | REACT_APP_API_BASE
+        v
++-----------------------------------------------------------------------+
+|                      FastAPI Backend (Render)                         |
+|                                                                       |
+|  API Layer                                                            |
+|  - /health                                                            |
+|  - /model-info                                                        |
+|  - /users/register                                                    |
+|  - /users/login                                                       |
+|  - /users/{user_id:int}                                               |
+|  - /users/{user_id:int}/history                                       |
+|  - /users/{user_id:int}/login-history                                 |
+|  - /predict                                                           |
+|                                                                       |
+|  Service/Domain Layer                                                 |
+|  - Input validation (Pydantic)                                        |
+|  - Mood encoding and feature alignment                                |
+|  - Stress categorization (Low/Medium/High)                            |
+|  - Password hashing + verification                                    |
+|                                                                       |
+|  Data Access Layer (SQLAlchemy ORM)                                   |
+|  - User, StressPrediction, LoginEvent models                          |
+|  - Session lifecycle + transactions                                   |
+|                                                                       |
+|  ML Inference Layer                                                   |
+|  - Load joblib artifact                                               |
+|  - Extract model + feature_names + mood_map                           |
+|  - Predict stress score                                               |
++-------------------------------+---------------------------------------+
+                                |
+                                | SQL over TLS
+                                v
++-----------------------------------------------------------------------+
+|                  PostgreSQL Database (Render)                         |
+|  Tables:                                                              |
+|  - users                                                              |
+|  - stress_predictions                                                 |
+|  - login_events                                                       |
++-----------------------------------------------------------------------+
+```
 
 ### 4.2 Backend Components
 
@@ -418,3 +422,17 @@ Screen time
 - React (CRA)
 - GitHub Actions
 - Render (Web Service + PostgreSQL)
+rcel/Netlify (optional but recommended):
+  - Import `frontend` from same GitHub repo
+  - Add env var `REACT_APP_API_BASE=https://<render-backend-url>`
+  - Deploy and copy frontend URL
+5. Create demo user using deployed backend:
+  - `POST https://<render-backend-url>/users/register`
+  - Save username/password for evaluator
+
+Final deliverables to share:
+- Backend link
+- API docs link (`/docs`)
+- Test credentials
+- Sample predict payload
+- Frontend link (optional)
